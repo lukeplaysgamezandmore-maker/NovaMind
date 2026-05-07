@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NovaMind</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #f5f1ec; font-family: 'DM Sans', sans-serif; color: #2a2420; }
+
+  /* ══ AUTH ══ */
+  #auth-overlay { position: fixed; inset: 0; z-index: 1000; background: #f5f1ec; display: flex; align-items: center; justify-content: center; }
+  .auth-card { background: #fff; border: 1px solid #e0d9d0; border-radius: 22px; padding: 42px 46px; width: 100%; max-width: 400px; box-shadow: 0 12px 48px rgba(0,0,0,0.09); animation: fadeUp 0.35s ease; }
+  .auth-logo-row { display: flex; align-items: center; gap: 11px; justify-content: center; margin-bottom: 28px; }
+  .auth-brand { font-family: 'Lora', serif; font-size: 26px; font-weight: 600; color: #2a2420; letter-spacing: -0.3px; }
+  .auth-tabs { display: flex; background: #f5f1ec; border-radius: 10px; padding: 4px; margin-bottom: 26px; gap: 4px; }
+  .auth-tab { flex: 1; padding: 8px; border: none; border-radius: 7px; background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500; color: #7a7068; transition: all 0.2s; }
+  .auth-tab.active { background: #fff; color: #2a2420; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .auth-field { margin-bottom: 13px; }
+  .auth-field label { display: block; font-size: 12px; font-weight: 600; color: #7a7068; margin-bottom: 5px; letter-spacing: 0.4px; text-transform: uppercase; }
+  .auth-field input { width: 100%; padding: 10px 14px; border: 1.5px solid #e0d9d0; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14.5px; color: #2a2420; background: #faf8f5; transition: border 0.2s; }
+  .auth-field input:focus { outline: none; border-color: #b8693a; background: #fff; }
+  .auth-btn { width: 100%; padding: 11px; margin-top: 8px; background: #2a2420; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; transition: background 0.2s; }
+  .auth-btn:hover { background: #b8693a; }
+  .auth-error { color: #c0392b; font-size: 12px; margin-top: 8px; text-align: center; min-height: 18px; }
+
+  /* ══ UPGRADE MODAL ══ */
+  #upgrade-modal { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(42,36,32,0.38); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+  #upgrade-modal.open { display: flex; }
+  .upgrade-card { background: #fff; border: 1px solid #e0d9d0; border-radius: 24px; padding: 46px 50px; max-width: 540px; width: 92%; box-shadow: 0 16px 64px rgba(0,0,0,0.13); animation: fadeUp 0.3s ease; position: relative; }
+  .modal-close { position: absolute; top: 18px; right: 20px; background: transparent; border: none; cursor: pointer; font-size: 20px; color: #9a9088; line-height: 1; transition: color 0.15s; }
+  .modal-close:hover { color: #2a2420; }
+  .upgrade-logo-row { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 6px; }
+  .upgrade-title { font-family: 'Lora', serif; font-size: 28px; font-weight: 600; color: #2a2420; text-align: center; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .upgrade-sub { font-size: 14px; color: #7a7068; text-align: center; margin-bottom: 24px; line-height: 1.55; }
+
+  /* billing toggle */
+  .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 24px; }
+  .billing-toggle span { font-size: 13px; color: #7a7068; font-weight: 500; }
+  .billing-toggle span.active-label { color: #2a2420; font-weight: 600; }
+  .toggle-track { width: 42px; height: 24px; border-radius: 12px; background: #e0d9d0; cursor: pointer; position: relative; transition: background 0.25s; border: none; padding: 0; flex-shrink: 0; }
+  .toggle-track.on { background: #b8693a; }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+  .toggle-track.on .toggle-thumb { left: 21px; }
+  .save-badge { background: #b8693a18; border: 1px solid #b8693a44; border-radius: 20px; padding: 2px 9px; font-size: 11px; color: #b8693a; font-weight: 700; letter-spacing: 0.3px; }
+
+  /* plan cards */
+  .plans { display: flex; gap: 14px; }
+  .plan-card { flex: 1; border-radius: 18px; padding: 24px 20px; border: 2px solid #e0d9d0; background: #faf8f5; display: flex; flex-direction: column; gap: 11px; transition: border-color 0.2s; }
+  .plan-card.pro { border-color: #b8693a; background: #fff; }
+  .plan-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #9a9088; }
+  .plan-label.pro { color: #b8693a; }
+  .plan-price { font-family: 'Lora', serif; font-size: 34px; font-weight: 600; color: #2a2420; line-height: 1; }
+  .plan-price sub { font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 400; color: #9a9088; vertical-align: baseline; }
+  .plan-per { font-size: 12px; color: #9a9088; margin-top: 2px; }
+  .plan-features { list-style: none; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .plan-features li { font-size: 13px; color: #4a4440; display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+  .plan-features li::before { content: '✓'; color: #b8693a; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .plan-features li.muted::before { content: '–'; color: #c5bfb7; }
+  .plan-features li.muted { color: #aaa49e; }
+  .plan-btn { padding: 11px; border-radius: 11px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; transition: all 0.2s; margin-top: 4px; text-decoration: none; display: block; text-align: center; }
+  .plan-btn.free-btn { background: #f0ebe4; color: #9a9088; cursor: default; }
+  .plan-btn.pro-btn { background: #2a2420; color: #fff; }
+  .plan-btn.pro-btn:hover { background: #b8693a; }
+  .stripe-note { text-align: center; font-size: 11.5px; color: #b5afa8; margin-top: 20px; }
+  .stripe-note a { color: #9a9088; text-decoration: none; }
+
+  /* ══ APP SHELL ══ */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ══ LEFT SIDEBAR ══ */
+  #sidebar { width: 48px; background: #f5f1ec; border-right: 1px solid #e5dfd7; display: flex; flex-direction: column; align-items: center; padding: 10px 0 14px; flex-shrink: 0; gap: 2px; }
+  .nav-btn { width: 32px; height: 32px; border-radius: 8px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #7a7068; transition: background 0.15s; position: relative; }
+  .nav-btn:hover { background: #ebe6df; }
+  .nav-btn[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: 40px; top: 50%; transform: translateY(-50%); background: #2a2420; color: #f5f1ec; font-size: 11px; white-space: nowrap; padding: 4px 8px; border-radius: 6px; z-index: 400; font-family: 'DM Sans', sans-serif; pointer-events: none; }
+  .nav-spacer { flex: 1; }
+  #profile-btn { width: 30px; height: 30px; border-radius: 50%; background: #2a2420; color: #f5f1ec; border: none; cursor: pointer; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; transition: opacity 0.15s; letter-spacing: 0.5px; }
+  #profile-btn:hover { opacity: 0.8; }
+
+  /* profile popup */
+  #profile-popup { display: none; position: fixed; left: 56px; bottom: 14px; z-index: 300; background: #fff; border: 1px solid #e0d9d0; border-radius: 16px; padding: 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.13); min-width: 230px; animation: fadeUp 0.2s ease; }
+  #profile-popup.open { display: block; }
+  .popup-avatar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .popup-avatar { width: 36px; height: 36px; border-radius: 50%; background: #2a2420; color: #f5f1ec; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; flex-shrink: 0; }
+  .popup-info { display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+  .popup-name { font-weight: 600; font-size: 14px; color: #2a2420; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .popup-email { font-size: 11.5px; color: #9a9088; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .popup-plan-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; margin-bottom: 12px; }
+  .popup-plan-badge.free { background: #f0ebe4; color: #7a7068; border: 1px solid #e0d8cf; }
+  .popup-plan-badge.pro { background: #b8693a18; color: #b8693a; border: 1px solid #b8693a44; }
+  .popup-upgrade-btn { width: 100%; padding: 9px 12px; border-radius: 10px; background: #b8693a; color: #fff; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 600; margin-bottom: 8px; transition: background 0.2s; }
+  .popup-upgrade-btn:hover { background: #a05a2e; }
+  .popup-divider { height: 1px; background: #ece7e0; margin: 10px 0; }
+  .popup-btn { width: 100%; text-align: left; padding: 8px 10px; background: transparent; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: #4a4440; border-radius: 8px; transition: background 0.15s; }
+  .popup-btn:hover { background: #f5f1ec; }
+  .popup-btn.danger { color: #c0392b; }
+
+  /* ══ CHAT SIDEBAR ══ */
+  #chat-sidebar { width: 220px; background: #faf8f5; border-right: 1px solid #e5dfd7; display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.28s ease; overflow: hidden; }
+  #chat-sidebar.collapsed { width: 0; }
+  .chat-sidebar-inner { width: 220px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+  .sidebar-header { padding: 14px 14px 8px; font-size: 11px; font-weight: 700; color: #9a9088; letter-spacing: 1.2px; text-transform: uppercase; border-bottom: 1px solid #e5dfd7; display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-new-btn { background: #2a2420; color: #fff; border: none; border-radius: 7px; padding: 4px 9px; cursor: pointer; font-size: 11px; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: background 0.15s; }
+  .sidebar-new-btn:hover { background: #b8693a; }
+  #chat-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
+  .chat-item { padding: 9px 10px; border-radius: 9px; cursor: pointer; margin-bottom: 2px; transition: background 0.15s; display: flex; align-items: center; gap: 8px; }
+  .chat-item:hover { background: #ebe6df; }
+  .chat-item.active { background: #e5dfd7; }
+  .chat-item-icon { font-size: 12px; opacity: 0.45; flex-shrink: 0; }
+  .chat-item-title { font-size: 13px; color: #2a2420; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ══ MAIN ══ */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ══ HOME VIEW ══ */
+  #home-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 24px 60px; animation: fadeIn 0.3s ease; }
+  .plan-badge { background: #eee9e2; border: 1px solid #ddd7cf; border-radius: 20px; padding: 5px 14px; font-size: 12.5px; color: #7a7068; margin-bottom: 32px; display: flex; align-items: center; gap: 7px; cursor: pointer; transition: background 0.15s; }
+  .plan-badge:hover { background: #e6e0d8; }
+  .plan-badge .upgrade { color: #b8693a; font-weight: 600; }
+  .greeting-row { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+  .greeting-text { font-family: 'Lora', serif; font-size: 34px; font-weight: 500; color: #2a2420; letter-spacing: -0.4px; }
+  .input-box { width: 100%; max-width: 580px; background: #fff; border: 1px solid #ddd7cf; border-radius: 16px; padding: 14px 16px 10px; box-shadow: 0 1px 8px rgba(0,0,0,0.05); margin-bottom: 14px; }
+  .input-box textarea { width: 100%; background: transparent; border: none; font-size: 15px; color: #2a2420; font-family: 'DM Sans', sans-serif; line-height: 1.65; min-height: 52px; resize: none; }
+  .input-box textarea:focus { outline: none; }
+  .input-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .left-btns, .right-btns { display: flex; align-items: center; gap: 6px; }
+  .icon-btn { width: 28px; height: 28px; border-radius: 50%; background: transparent; border: 1px solid #d8d2ca; cursor: pointer; font-size: 15px; color: #7a7068; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .icon-btn:hover { background: #f0ebe4; }
+  .ver-btn { background: transparent; border: none; cursor: pointer; font-size: 13px; color: #7a7068; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 6px; transition: background 0.15s; }
+  .ver-btn:hover { background: #f0ebe4; }
+  .send-btn { width: 32px; height: 32px; border-radius: 50%; background: #ddd7cf; border: none; cursor: default; font-size: 15px; color: #fff; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+  .send-btn.active { background: #b8693a; cursor: pointer; }
+  .send-btn.active:hover { background: #a05a2e; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .pill { display: flex; align-items: center; gap: 6px; padding: 7px 15px; border-radius: 20px; background: #fff; border: 1px solid #ddd7cf; cursor: pointer; font-size: 13.5px; color: #4a4440; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+  .pill:hover { background: #ebe6df; }
+  .pill-icon { opacity: 0.6; font-size: 12px; }
+
+  /* version dropdown */
+  .ver-wrap { position: relative; }
+  .ver-menu { display: none; position: absolute; background: #fff; border: 1px solid #ddd7cf; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; min-width: 175px; z-index: 200; bottom: calc(100% + 6px); left: 0; }
+  .ver-menu.open { display: block; animation: fadeUp 0.15s ease; }
+  .ver-opt { width: 100%; text-align: left; padding: 10px 14px; border: none; background: #fff; cursor: pointer; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; gap: 2px; transition: background 0.15s; }
+  .ver-opt:hover { background: #f5f1ec; }
+  .ver-opt.selected { background: #f5f1ec; }
+  .ver-name { font-size: 13.5px; font-weight: 600; color: #2a2420; }
+  .ver-desc { font-size: 11.5px; color: #9a9088; }
+
+  /* ══ CHAT VIEW ══ */
+  #chat-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-header { padding: 13px 24px; border-bottom: 1px solid #e5dfd7; display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: #f5f1ec; }
+  .chat-hname { font-family: 'Lora', serif; font-size: 15px; font-weight: 500; color: #2a2420; }
+  .chat-hdash { color: #c5bfb7; font-size: 12px; }
+  .chat-hdesc { font-size: 13px; color: #9a9088; }
+  .new-chat-btn { margin-left: auto; padding: 5px 13px; border-radius: 20px; background: transparent; border: 1px solid #ddd7cf; cursor: pointer; font-size: 12.5px; color: #7a7068; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+  .new-chat-btn:hover { background: #ebe6df; }
+  #messages { flex: 1; overflow-y: auto; padding: 32px 14vw; }
+  .msg-row { display: flex; margin-bottom: 22px; animation: fadeUp 0.25s ease forwards; }
+  .msg-row.user { justify-content: flex-end; }
+  .ai-avatar { width: 26px; height: 26px; border-radius: 50%; background: #f0ebe4; border: 1px solid #e0d8cf; display: flex; align-items: center; justify-content: center; margin-right: 10px; flex-shrink: 0; margin-top: 1px; overflow: hidden; }
+  .msg-bubble { max-width: 68%; font-size: 15px; line-height: 1.7; font-family: 'DM Sans', sans-serif; white-space: pre-wrap; word-break: break-word; }
+  .msg-bubble.user { background: #eee9e2; border-radius: 18px; padding: 10px 16px; color: #2a2420; }
+  .msg-bubble.ai { color: #2a2420; padding: 2px 0; }
+  .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: #999; display: inline-block; margin: 0 2px; animation: bounce 1.2s ease-in-out infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  .chat-input-area { padding: 10px 14vw 18px; border-top: 1px solid #e5dfd7; background: #f5f1ec; flex-shrink: 0; }
+  .chat-input-area .input-box { margin-bottom: 0; }
+  .chat-hint { text-align: center; font-size: 11.5px; color: #b5afa8; margin-top: 8px; }
+
+  /* ══ RIGHT RAIL ══ */
+  #right-rail { width: 44px; background: #f5f1ec; border-left: 1px solid #e5dfd7; display: flex; flex-direction: column; align-items: center; padding-top: 12px; flex-shrink: 0; }
+
+  /* ══ ANIMATIONS ══ */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-5px); opacity: 1; } }
+  ::-webkit-scrollbar { width: 0; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ CUSTOM LOGO SVG (reusable via JS) ══════════ -->
+<!-- NovaMind logo: a stylised "N" inside a rounded diamond shape -->
+<svg id="logo-template" style="display:none" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/>
+  <path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="28" cy="8" r="3" fill="#b8693a"/>
+</svg>
+
+<!-- ══════════ AUTH OVERLAY ══════════ -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo-row">
+      <svg width="34" height="34" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/><path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="8" r="3" fill="#b8693a"/></svg>
+      <span class="auth-brand">NovaMind</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+    <!-- Login -->
+    <div id="form-login">
+      <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+      <button class="auth-btn" onclick="doLogin()">Sign In</button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
+    <!-- Signup -->
+    <div id="form-signup" class="hidden">
+      <div class="auth-field"><label>Your Name</label><input type="text" id="signup-name" placeholder="e.g. Alex" /></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com" /></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="signup-password" placeholder="Min 6 characters" /></div>
+      <button class="auth-btn" onclick="doSignup()">Create Account</button>
+      <div class="auth-error" id="signup-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ UPGRADE MODAL ══════════ -->
+<div id="upgrade-modal">
+  <div class="upgrade-card">
+    <button class="modal-close" onclick="closeUpgrade()">✕</button>
+
+    <div class="upgrade-logo-row">
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/><path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="8" r="3" fill="#b8693a"/></svg>
+    </div>
+    <h2 class="upgrade-title">Upgrade NovaMind</h2>
+    <p class="upgrade-sub">Unlock unlimited messages, all AI versions, and priority speed.</p>
+
+    <!-- Billing toggle -->
+    <div class="billing-toggle">
+      <span id="lbl-monthly" class="active-label">Monthly</span>
+      <button class="toggle-track" id="billing-toggle" onclick="toggleBilling()">
+        <div class="toggle-thumb"></div>
+      </button>
+      <span id="lbl-yearly">Yearly</span>
+      <span class="save-badge" id="save-badge" style="display:none">Save 17%</span>
+    </div>
+
+    <div class="plans">
+      <!-- Free -->
+      <div class="plan-card">
+        <div class="plan-label">Free</div>
+        <div>
+          <div class="plan-price">$0<sub>/mo</sub></div>
+        </div>
+        <ul class="plan-features">
+          <li>40 messages / day</li>
+          <li>Nova 1 only</li>
+          <li class="muted">Nova 2 &amp; 3</li>
+          <li class="muted">Priority speed</li>
+          <li class="muted">Unlimited history</li>
+        </ul>
+        <button class="plan-btn free-btn" disabled>Current plan</button>
+      </div>
+      <!-- Pro -->
+      <div class="plan-card pro">
+        <div class="plan-label pro">✦ Pro</div>
+        <div>
+          <div class="plan-price" id="pro-price">$10<sub>/mo</sub></div>
+          <div class="plan-per" id="pro-per">Billed monthly</div>
+        </div>
+        <ul class="plan-features">
+          <li>Unlimited messages</li>
+          <li>All 3 AI versions</li>
+          <li>Nova 2 &amp; 3 unlocked</li>
+          <li>Priority speed</li>
+          <li>Unlimited history</li>
+        </ul>
+        <a class="plan-btn pro-btn" id="checkout-link" href="https://buy.stripe.com/test_6oU9AV2H31hK6L420nfMA01" target="_blank" rel="noopener">
+          Upgrade to Pro →
+        </a>
+      </div>
+    </div>
+
+    <div class="stripe-note">🔒 Payments secured by <a href="https://stripe.com" target="_blank">Stripe</a> · Cancel anytime</div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div id="app">
+
+  <!-- Left sidebar -->
+  <div id="sidebar">
+    <button class="nav-btn" data-tip="New Chat" onclick="goHome()">
+      <!-- pencil icon -->
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l2 2L7 15H5v-2L14.5 3.5z"/></svg>
+    </button>
+    <button class="nav-btn" data-tip="Texts" onclick="toggleChatSidebar()">
+      <!-- chat bubble icon -->
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10c0 3.314-3.134 6-7 6a7.8 7.8 0 01-3-.585L3 17l1.5-3A5.6 5.6 0 013 10c0-3.314 3.134-6 7-6s7 2.686 7 6z"/></svg>
+    </button>
+    <button class="nav-btn" data-tip="Nova 1 — Fast" onclick="setVersion(0)">
+      <!-- lightning icon -->
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2L4 11h6l-1 7 7-9h-6l1-7z"/></svg>
+    </button>
+    <button class="nav-btn" data-tip="Nova 2 — Creative" onclick="setVersion(1)">
+      <!-- sparkle icon -->
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41"/><circle cx="10" cy="10" r="3"/></svg>
+    </button>
+    <button class="nav-btn" data-tip="Nova 3 — Deep" onclick="setVersion(2)">
+      <!-- brain/layers icon -->
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="8" rx="6" ry="4"/><path d="M4 8c0 2.21 2.686 4 6 4s6-1.79 6-4"/><path d="M4 12c0 2.21 2.686 4 6 4s6-1.79 6-4"/></svg>
+    </button>
+    <div class="nav-spacer"></div>
+    <button id="profile-btn" onclick="toggleProfilePopup()">??</button>
+  </div>
+
+  <!-- Profile popup -->
+  <div id="profile-popup">
+    <div class="popup-avatar-row">
+      <div class="popup-avatar" id="popup-avatar">??</div>
+      <div class="popup-info">
+        <div class="popup-name" id="popup-name">—</div>
+        <div class="popup-email" id="popup-email">—</div>
+      </div>
+    </div>
+    <div class="popup-plan-badge free" id="popup-plan-badge">Free plan</div>
+    <button class="popup-upgrade-btn" id="popup-upgrade-btn" onclick="openUpgrade()">✦ Upgrade to Pro</button>
+    <div class="popup-divider"></div>
+    <button class="popup-btn danger" onclick="doLogout()">↩ Sign Out</button>
+  </div>
+
+  <!-- Chat history sidebar -->
+  <div id="chat-sidebar" class="collapsed">
+    <div class="chat-sidebar-inner">
+      <div class="sidebar-header">
+        Texts
+        <button class="sidebar-new-btn" onclick="goHome()">+ New</button>
+      </div>
+      <div id="chat-list"></div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+
+    <!-- HOME -->
+    <div id="home-view">
+      <div class="plan-badge" onclick="openUpgrade()">
+        Free plan <span style="color:#d0cbc3">·</span> <span class="upgrade">Upgrade ↑</span>
+      </div>
+      <div class="greeting-row">
+        <svg width="32" height="32" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/><path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="8" r="3" fill="#b8693a"/></svg>
+        <h1 class="greeting-text" id="greeting-text">Morning, there</h1>
+      </div>
+
+      <div class="input-box">
+        <textarea id="home-textarea" placeholder="How can I help you today?" rows="2"
+          oninput="autoSize(this);updateSendBtn('home-send',this.value)"
+          onkeydown="handleKey(event,'home')"></textarea>
+        <div class="input-footer">
+          <div class="left-btns"><button class="icon-btn" title="Attach">+</button></div>
+          <div class="right-btns">
+            <div class="ver-wrap">
+              <button class="ver-btn" onclick="toggleVerMenu('vmh')">
+                <span id="ver-label-home">Nova 1</span>&nbsp;<span style="font-size:9px;opacity:.55">▾</span>
+              </button>
+              <div class="ver-menu" id="vmh">
+                <button class="ver-opt selected" onclick="pickVer(0)"><span class="ver-name">Nova 1</span><span class="ver-desc">Fast &amp; precise</span></button>
+                <button class="ver-opt" onclick="pickVer(1)"><span class="ver-name">Nova 2</span><span class="ver-desc">Creative &amp; expressive</span></button>
+                <button class="ver-opt" onclick="pickVer(2)"><span class="ver-name">Nova 3</span><span class="ver-desc">Deep reasoning</span></button>
+              </div>
+            </div>
+            <button class="send-btn" id="home-send" onclick="sendFromHome()">↑</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pills">
+        <button class="pill" onclick="quickSend('Help me write or debug some code')"><span class="pill-icon">&lt;/&gt;</span> Code</button>
+        <button class="pill" onclick="quickSend('Help me create something new')"><span class="pill-icon">✦</span> Create</button>
+        <button class="pill" onclick="quickSend('Help me write something')"><span class="pill-icon">✎</span> Write</button>
+        <button class="pill" onclick="quickSend('Explain something to me')"><span class="pill-icon">◎</span> Learn</button>
+        <button class="pill" onclick="quickSend('Help me with something in my life')"><span class="pill-icon">☕</span> Life stuff</button>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="chat-view" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="chat-header">
+        <svg width="22" height="22" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/><path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="8" r="3" fill="#b8693a"/></svg>
+        <span class="chat-hname" id="chat-ver-name">Nova 1</span>
+        <span class="chat-hdash">—</span>
+        <span class="chat-hdesc" id="chat-ver-desc">Fast &amp; precise</span>
+        <button class="new-chat-btn" onclick="goHome()">+ New chat</button>
+      </div>
+      <div id="messages"></div>
+      <div class="chat-input-area">
+        <div class="input-box">
+          <textarea id="chat-textarea" placeholder="Message Nova 1..." rows="1"
+            oninput="autoSize(this);updateSendBtn('chat-send',this.value)"
+            onkeydown="handleKey(event,'chat')"></textarea>
+          <div class="input-footer">
+            <div class="left-btns">
+              <button class="icon-btn">+</button>
+              <div class="ver-wrap">
+                <button class="ver-btn" onclick="toggleVerMenu('vmc')">
+                  <span id="ver-label-chat">Nova 1</span>&nbsp;<span style="font-size:9px;opacity:.55">▾</span>
+                </button>
+                <div class="ver-menu" id="vmc">
+                  <button class="ver-opt selected" onclick="pickVer(0)"><span class="ver-name">Nova 1</span><span class="ver-desc">Fast &amp; precise</span></button>
+                  <button class="ver-opt" onclick="pickVer(1)"><span class="ver-name">Nova 2</span><span class="ver-desc">Creative &amp; expressive</span></button>
+                  <button class="ver-opt" onclick="pickVer(2)"><span class="ver-name">Nova 3</span><span class="ver-desc">Deep reasoning</span></button>
+                </div>
+              </div>
+            </div>
+            <div class="right-btns">
+              <button class="send-btn" id="chat-send" onclick="sendFromChat()">↑</button>
+            </div>
+          </div>
+        </div>
+        <div class="chat-hint">NovaMind can make mistakes · Shift+Enter for new line</div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- Right rail -->
+  <div id="right-rail">
+    <button class="nav-btn" data-tip="Notifications">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a6 6 0 00-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 00-6-6z"/><path d="M8.5 17.5a1.5 1.5 0 003 0"/></svg>
+    </button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIG — paste your Anthropic API key here
+// ══════════════════════════════════════════════════════
+const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+
+// Stripe payment links
+const STRIPE = {
+  monthly: 'https://buy.stripe.com/test_6oU9AV2H31hK6L420nfMA01',
+  yearly:  'https://buy.stripe.com/test_3cIbJ30yVgcEc5o5czfMA02',
+};
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+const VERSIONS = [
+  { name:'Nova 1', desc:'Fast & precise',        system:'You are Nova 1, a fast and precise AI assistant. Be concise, clear, and helpful.' },
+  { name:'Nova 2', desc:'Creative & expressive',  system:'You are Nova 2, a creative and expressive AI assistant. Use vivid language and bring personality.' },
+  { name:'Nova 3', desc:'Deep reasoning',          system:'You are Nova 3, an AI assistant optimized for deep reasoning. Think step by step and be thorough.' },
+];
+
+let currentUser = null;
+let accounts    = {};
+let activeVer   = 0;
+let activeChat  = null;
+let chatSidebarOpen = false;
+let isLoading   = false;
+let billingYearly = false;
+
+// ══════════════════════════════════════════════════════
+//  PERSIST
+// ══════════════════════════════════════════════════════
+function saveAccounts() { localStorage.setItem('nm_accounts', JSON.stringify(accounts)); }
+function loadAccounts() { try { accounts = JSON.parse(localStorage.getItem('nm_accounts') || '{}'); } catch { accounts = {}; } }
+function saveSession()  { localStorage.setItem('nm_session', currentUser || ''); }
+function loadSession()  { const s = localStorage.getItem('nm_session'); if (s && accounts[s]) { currentUser = s; return true; } return false; }
+function getUser()      { return accounts[currentUser]; }
+function genId()        { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ══════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════
+loadAccounts();
+
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+}
+
+function doSignup() {
+  const name  = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('signup-password').value;
+  const err   = document.getElementById('signup-error');
+  if (!name)               { err.textContent = 'Please enter your name.'; return; }
+  if (!email.includes('@')){ err.textContent = 'Enter a valid email.'; return; }
+  if (pass.length < 6)     { err.textContent = 'Password must be 6+ characters.'; return; }
+  if (accounts[email])     { err.textContent = 'Account already exists.'; return; }
+  accounts[email] = { name, email, password: pass, chats: [], isPro: false };
+  saveAccounts(); currentUser = email; saveSession(); err.textContent = '';
+  launchApp();
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-password').value;
+  const err   = document.getElementById('login-error');
+  if (!accounts[email])                { err.textContent = 'No account found.'; return; }
+  if (accounts[email].password !== pass){ err.textContent = 'Incorrect password.'; return; }
+  currentUser = email; saveSession(); err.textContent = '';
+  launchApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('nm_session');
+  location.reload();
+}
+
+function launchApp() {
+  document.getElementById('auth-overlay').style.display = 'none';
+  const u = getUser();
+  const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('profile-btn').textContent  = initials;
+  document.getElementById('popup-avatar').textContent = initials;
+  document.getElementById('popup-name').textContent   = u.name;
+  document.getElementById('popup-email').textContent  = u.email;
+  updatePlanUI();
+  setGreeting();
+  refreshChatList();
+}
+
+window.addEventListener('DOMContentLoaded', () => { loadAccounts(); if (loadSession()) launchApp(); });
+
+// ══════════════════════════════════════════════════════
+//  PLAN UI
+// ══════════════════════════════════════════════════════
+function updatePlanUI() {
+  const u = getUser();
+  const badge    = document.getElementById('popup-plan-badge');
+  const upgrBtn  = document.getElementById('popup-upgrade-btn');
+  if (u.isPro) {
+    badge.textContent = '✦ Pro'; badge.className = 'popup-plan-badge pro';
+    upgrBtn.style.display = 'none';
+  } else {
+    badge.textContent = 'Free plan'; badge.className = 'popup-plan-badge free';
+    upgrBtn.style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  GREETING
+// ══════════════════════════════════════════════════════
+function setGreeting() {
+  const h    = new Date().getHours();
+  const time = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening';
+  const name = getUser().name.split(' ')[0];
+  document.getElementById('greeting-text').textContent = `${time}, ${name}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  PROFILE POPUP
+// ══════════════════════════════════════════════════════
+function toggleProfilePopup() { document.getElementById('profile-popup').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  const pop = document.getElementById('profile-popup');
+  const btn = document.getElementById('profile-btn');
+  if (!pop.contains(e.target) && e.target !== btn) pop.classList.remove('open');
+});
+
+// ══════════════════════════════════════════════════════
+//  UPGRADE MODAL + BILLING TOGGLE
+// ══════════════════════════════════════════════════════
+function openUpgrade() {
+  document.getElementById('profile-popup').classList.remove('open');
+  document.getElementById('upgrade-modal').classList.add('open');
+}
+function closeUpgrade() { document.getElementById('upgrade-modal').classList.remove('open'); }
+document.getElementById('upgrade-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('upgrade-modal')) closeUpgrade();
+});
+
+function toggleBilling() {
+  billingYearly = !billingYearly;
+  const track = document.getElementById('billing-toggle');
+  const lm    = document.getElementById('lbl-monthly');
+  const ly    = document.getElementById('lbl-yearly');
+  const badge = document.getElementById('save-badge');
+  const price = document.getElementById('pro-price');
+  const per   = document.getElementById('pro-per');
+  const link  = document.getElementById('checkout-link');
+
+  track.classList.toggle('on', billingYearly);
+  lm.classList.toggle('active-label', !billingYearly);
+  ly.classList.toggle('active-label', billingYearly);
+  badge.style.display = billingYearly ? 'inline-flex' : 'none';
+
+  if (billingYearly) {
+    price.innerHTML = '$100<sub>/yr</sub>';
+    per.textContent = 'Billed annually (~$8.33/mo)';
+    link.href = STRIPE.yearly;
+  } else {
+    price.innerHTML = '$10<sub>/mo</sub>';
+    per.textContent = 'Billed monthly';
+    link.href = STRIPE.monthly;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  CHAT SIDEBAR
+// ══════════════════════════════════════════════════════
+function toggleChatSidebar() {
+  chatSidebarOpen = !chatSidebarOpen;
+  document.getElementById('chat-sidebar').classList.toggle('collapsed', !chatSidebarOpen);
+}
+
+function refreshChatList() {
+  const u    = getUser();
+  const list = document.getElementById('chat-list');
+  list.innerHTML = '';
+  if (!u.chats.length) {
+    list.innerHTML = '<div style="font-size:12px;color:#b5afa8;padding:12px 10px;">No texts yet</div>';
+    return;
+  }
+  [...u.chats].reverse().forEach(chat => {
+    const el = document.createElement('div');
+    el.className = 'chat-item' + (activeChat === chat.id ? ' active' : '');
+    el.innerHTML = `<span class="chat-item-icon">💬</span><span class="chat-item-title">${escHtml(chat.title)}</span>`;
+    el.onclick = () => loadChat(chat.id);
+    list.appendChild(el);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  VERSION PICKER
+// ══════════════════════════════════════════════════════
+function toggleVerMenu(id) {
+  document.querySelectorAll('.ver-menu').forEach(m => { if (m.id !== id) m.classList.remove('open'); });
+  document.getElementById(id).classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ver-wrap')) document.querySelectorAll('.ver-menu').forEach(m => m.classList.remove('open'));
+});
+
+function pickVer(idx) {
+  activeVer = idx;
+  const v = VERSIONS[idx];
+  document.querySelectorAll('.ver-menu').forEach(m => {
+    m.querySelectorAll('.ver-opt').forEach((b, i) => b.classList.toggle('selected', i === idx));
+    m.classList.remove('open');
+  });
+  document.getElementById('ver-label-home').textContent = v.name;
+  document.getElementById('ver-label-chat').textContent = v.name;
+  updateChatHeader();
+}
+function setVersion(idx) { pickVer(idx); }
+
+// ══════════════════════════════════════════════════════
+//  INPUT HELPERS
+// ══════════════════════════════════════════════════════
+function autoSize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; }
+function updateSendBtn(id, val) { document.getElementById(id).classList.toggle('active', val.trim().length > 0); }
+function handleKey(e, ctx) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ctx === 'home' ? sendFromHome() : sendFromChat(); } }
+
+// ══════════════════════════════════════════════════════
+//  VIEWS
+// ══════════════════════════════════════════════════════
+function showHome() { document.getElementById('home-view').style.display = 'flex'; document.getElementById('chat-view').classList.add('hidden'); }
+function showChat() { document.getElementById('home-view').style.display = 'none'; document.getElementById('chat-view').classList.remove('hidden'); }
+function goHome()   { activeChat = null; document.getElementById('home-textarea').value = ''; updateSendBtn('home-send',''); showHome(); refreshChatList(); }
+
+// ══════════════════════════════════════════════════════
+//  SEND
+// ══════════════════════════════════════════════════════
+function sendFromHome() { const t = document.getElementById('home-textarea').value.trim(); if (!t || isLoading) return; startNewChat(t); }
+function quickSend(t)   { startNewChat(t); }
+function sendFromChat() {
+  const ta = document.getElementById('chat-textarea');
+  const t  = ta.value.trim();
+  if (!t || isLoading) return;
+  ta.value = ''; ta.style.height = 'auto'; updateSendBtn('chat-send','');
+  sendMessage(t);
+}
+
+// ══════════════════════════════════════════════════════
+//  CHAT MANAGEMENT
+// ══════════════════════════════════════════════════════
+function startNewChat(firstMsg) {
+  const u = getUser(); const id = genId();
+  const chat = { id, title: firstMsg.slice(0,42), messages: [], version: activeVer };
+  u.chats.push(chat); saveAccounts();
+  activeChat = id;
+  document.getElementById('home-textarea').value = ''; updateSendBtn('home-send','');
+  showChat(); updateChatHeader(); document.getElementById('messages').innerHTML = '';
+  sendMessage(firstMsg); refreshChatList();
+}
+
+function loadChat(id) {
+  const u = getUser(); const chat = u.chats.find(c => c.id === id); if (!chat) return;
+  activeChat = id; activeVer = chat.version || 0; pickVer(activeVer);
+  showChat(); updateChatHeader();
+  const msgs = document.getElementById('messages'); msgs.innerHTML = '';
+  chat.messages.forEach(m => appendBubble(m.role, m.content));
+  msgs.scrollTop = msgs.scrollHeight; refreshChatList();
+}
+
+function getActiveChat() { return getUser().chats.find(c => c.id === activeChat); }
+
+function updateChatHeader() {
+  const v = VERSIONS[activeVer];
+  document.getElementById('chat-ver-name').textContent = v.name;
+  document.getElementById('chat-ver-desc').textContent = v.desc;
+  const ta = document.getElementById('chat-textarea');
+  if (ta) ta.placeholder = `Message ${v.name}...`;
+}
+
+// ══════════════════════════════════════════════════════
+//  MESSAGES
+// ══════════════════════════════════════════════════════
+function appendBubble(role, content) {
+  const msgs = document.getElementById('messages');
+  const row  = document.createElement('div');
+  row.className = `msg-row ${role}`;
+  if (role === 'ai') {
+    row.innerHTML = `<div class="ai-avatar"><svg width="16" height="16" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/><path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="8" r="3" fill="#b8693a"/></svg></div><div class="msg-bubble ai">${escHtml(content)}</div>`;
+  } else {
+    row.innerHTML = `<div class="msg-bubble user">${escHtml(content)}</div>`;
+  }
+  msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight; return row;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const row  = document.createElement('div');
+  row.className = 'msg-row ai'; row.id = 'typing-row';
+  row.innerHTML = `<div class="ai-avatar"><svg width="16" height="16" viewBox="0 0 36 36" fill="none"><rect x="4" y="4" width="28" height="28" rx="8" fill="#2a2420"/><path d="M11 25V11L18 22L25 11V25" stroke="#f5f1ec" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="28" cy="8" r="3" fill="#b8693a"/></svg></div><div class="msg-bubble ai"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+  msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() { const el = document.getElementById('typing-row'); if (el) el.remove(); }
+
+// ══════════════════════════════════════════════════════
+//  API
+// ══════════════════════════════════════════════════════
+async function sendMessage(text) {
+  const chat = getActiveChat(); if (!chat) return;
+  isLoading = true;
+  chat.messages.push({ role:'user', content:text }); saveAccounts();
+  appendBubble('user', text); showTyping();
+  const history = chat.messages.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content }));
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system: VERSIONS[activeVer].system, messages: history }),
+    });
+    const data  = await res.json();
+    const reply = data.content?.map(b => b.text||'').join('') || (data.error?.message) || 'Something went wrong.';
+    removeTyping();
+    chat.messages.push({ role:'ai', content:reply }); saveAccounts();
+    appendBubble('ai', reply);
+  } catch(e) {
+    removeTyping();
+    appendBubble('ai', '⚠ Could not reach the API. Make sure your API key is set correctly in the file.');
+  }
+  isLoading = false;
+}
+
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.ver-menu').forEach(m => m.classList.remove('open'));
+    document.getElementById('profile-popup').classList.remove('open');
+    closeUpgrade();
+  }
+});
+</script>
+</body>
+</html>
